@@ -151,6 +151,25 @@ class TestJsonRequest(TestRequestBase):
             kwargs = mock_dumps.call_args[1]
             assert kwargs["sort_keys"] is True
 
+    def test_replace_data_uses_new_dumps_kwargs(self):
+        request = JsonRequest("https://example.com/", data={"value": "initial"})
+        options = {"ensure_ascii": False}
+        replacement = request.replace(data={"value": "café"}, dumps_kwargs=options)
+
+        assert replacement.body == '{"value": "café"}'.encode()
+        assert replacement.dumps_kwargs == {"ensure_ascii": False, "sort_keys": True}
+        assert options == {"ensure_ascii": False}
+        assert request.dumps_kwargs == {"sort_keys": True}
+
+    def test_replace_data_can_reset_dumps_kwargs(self):
+        request = JsonRequest(
+            "https://example.com/", dumps_kwargs={"ensure_ascii": False}
+        )
+        replacement = request.replace(data={"value": "café"}, dumps_kwargs=None)
+
+        assert replacement.body == b'{"value": "caf\\u00e9"}'
+        assert replacement.dumps_kwargs == {"sort_keys": True}
+
     def test_replace_dumps_kwargs(self):
         """Test that dumps_kwargs are provided to json.dumps when replace is called"""
         data1 = {
